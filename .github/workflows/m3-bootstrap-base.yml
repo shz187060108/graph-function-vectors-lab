@@ -1,0 +1,41 @@
+name: M3 bootstrap verified release asset
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  ASSET_NAME: graph_function_vectors_lab_repro_core3_20260730.tar.gz
+  EXPECTED_SHA256: 38cefdbfbc7ef22d669d5893114d071c7ceaa472111c1724f91371f97d284b32
+
+jobs:
+  fetch-release-asset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download v2026.07.30 \
+            --repo shz187060108/graph-function-vectors-lab \
+            --pattern "$ASSET_NAME" \
+            --dir release_asset
+      - name: Verify SHA-256
+        run: |
+          set -euo pipefail
+          actual="$(sha256sum "release_asset/$ASSET_NAME" | awk '{print $1}')"
+          echo "actual_sha256=$actual"
+          test "$actual" = "$EXPECTED_SHA256"
+      - name: Upload verified archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: graph-function-vectors-repro-core3-m3-rebuild
+          path: release_asset/${{ env.ASSET_NAME }}
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
